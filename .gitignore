@@ -13,3 +13,8 @@ data.tar
 output/hcstvg/log.txt
 *.mp4
 *.jpg
+output/*.txt
+output/*.json
+output/hcstvg/*.txt
+output/hcstvg/*.json
+output/*
