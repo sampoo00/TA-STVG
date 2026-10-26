@@ -7,6 +7,8 @@ from .grounding_model import build_encoder, build_decoder, build_TemporalSamplin
 from utils.misc import NestedTensor
 from .vidswin.video_swin_transformer import vidswin_model
 import json
+import os
+
 import torch
 
 def precision_recall(predicted_labels, true_labels):
@@ -97,8 +99,28 @@ class TASTVGNet(nn.Module):
         vid_features = self.input_proj2(vid_features_all['3'])
 
         # Extract Textual Feature
-        info_key = str(targets[0]['item_id']) if self.cfg.DATASET.NAME == 'VidSTG' else targets[0]['vid']
-        subject = self.verb_label[info_key]['sub'] if self.training else self.verb_label2[info_key]['sub']
+        vid_key = targets[0]['vid']
+        # HC-STVG annotation files (test.json / train.json) are keyed by
+        # the full video filename, including the file extension. The dataloader
+        # may pass a bare ID or a different extension (.mkv, etc.), so normalize
+        # here to the exact annotation key.
+        if '.' in vid_key:
+            vid_key = os.path.splitext(vid_key)[0] + '.mp4'
+        info_key = str(targets[0]['item_id']) if self.cfg.DATASET.NAME == 'VidSTG' else vid_key
+        if info_key not in self.verb_label2:
+            # The annotation file may not contain a subject entry for every video
+            # ID (e.g., a cached/trimmed target or an undocumented sample). Fall
+            # back to a placeholder subject instead of aborting the eval run.
+            logger = self.cfg.get_logger("Video Grounding") if hasattr(self.cfg, "get_logger") else None
+            if logger is not None:
+                logger.warning(
+                    f"HC-STVG subject annotation not found for vid={info_key!r}; "
+                    f"using placeholder subject '[unknown]'. "
+                    f"Available keys: {list(self.verb_label2.keys())[:10]}..."
+                )
+            subject = "[unknown]"
+        else:
+            subject = self.verb_label2[info_key]['sub']
         texts = [subject + " " + texts[0]]
         text_outputs, text_cls = self.text_encoder(texts, vis_features.device)
 
@@ -170,8 +192,21 @@ class TASTVGNet(nn.Module):
                 for a, b, c in zip(outputs_time[:-1], outputs_coord[:-1], outputs_actioness[:-1])
             ]
 
-        out['verb_labels'] = self.verb_label[info_key]['verb_index_list'] if self.training else self.verb_label2[info_key]['verb_index_list']
-        out['attr_labels'] = self.verb_label[info_key]['adj_index_list'] if self.training else self.verb_label2[info_key]['adj_index_list']
+        # Safely retrieve verb and attribute labels. In test mode some video IDs may be absent from the annotation file.
+        if not self.training and info_key not in self.verb_label2:
+            # Log a warning and fall back to empty lists to keep evaluation running.
+            logger = self.cfg.get_logger("Video Grounding") if hasattr(self.cfg, "get_logger") else None
+            if logger is not None:
+                logger.warning(
+                    f"HC-STVG verb/attr annotation missing for vid={info_key!r}; using empty placeholders."
+                )
+            verb_labels = []
+            attr_labels = []
+        else:
+            verb_labels = self.verb_label[info_key]['verb_index_list'] if self.training else self.verb_label2[info_key]['verb_index_list']
+            attr_labels = self.verb_label[info_key]['adj_index_list'] if self.training else self.verb_label2[info_key]['adj_index_list']
+        out['verb_labels'] = verb_labels
+        out['attr_labels'] = attr_labels
         out['att_sequences'] = att_sequences.unsqueeze(0)
         gt_index = torch.nonzero(targets[0]['actioness']).squeeze().tolist()
         out["pr"] = precision_recall(choose_index, gt_index)
