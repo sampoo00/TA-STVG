@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": "${command:pickArgs}"
+        },
+        {
+            "name": "test_net.py: HC-STVG",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/test_net.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--config-file", "experiments/hcstvg.yaml",
+                "MODEL.WEIGHT", "ckpts/TASTVG_HCSTVG.pth",
+                "OUTPUT_DIR", "output/hcstvg",
+                "DATALOADER.NUM_WORKERS", "0"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
