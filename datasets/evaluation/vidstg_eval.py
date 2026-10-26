@@ -30,7 +30,7 @@ class VidSTGiouEvaluator:
         gt_data = []
         cache_dir = os.path.join(vidstg_path, 'data_cache')
         dataset_cache = os.path.join(cache_dir,f'vidstd-{subset}-anno.cache')
-        gt_data = torch.load(dataset_cache)
+        gt_data = torch.load(dataset_cache, weights_only=False)
       
         self.vid2steds = {}  # map video_id to [start, end] of the GT tube
         self.vid2box = {}  # map video to bbox

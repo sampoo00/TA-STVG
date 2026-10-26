@@ -3,7 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-import torchtext
+# NOTE: `torchtext` binary in this env is incompatible with torch 2.8
+# (libtorchtext.so undefined symbol). Import it lazily only when the
+# LSTM path actually needs it, so the default RoBERTa path works.
 
 
 class RNNEncoder(nn.Module):
@@ -72,6 +74,7 @@ class RNNEncoder(nn.Module):
 
 
 def load_vocab(vocab_dir):
+    import torchtext
     vocab_pth = os.path.join(vocab_dir,'vocab.pth')
     if not os.path.exists(vocab_pth):
         vocab = torchtext.vocab.pretrained_aliases["glove.6B.300d"](cache=vocab_dir)

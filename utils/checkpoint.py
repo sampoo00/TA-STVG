@@ -182,8 +182,22 @@ class VSTGCheckpointer(object):
             if 'optimizer' in state_dict.keys():
                 state_dict.pop('optimizer')
         else:
-            # Used For Evaluation and Inference, Load trained Checkpoint
-            self.model.load_state_dict(state_dict[model_key])
+            # Used For Evaluation and Inference, Load trained Checkpoint.
+            # NOTE: checkpoints saved with transformers 4.x contain the
+            # non-persistent buffer `text_encoder.body.embeddings.position_ids`,
+            # which newer transformers (5.x) no longer registers in the model
+            # state_dict -> strict load fails with "Unexpected key(s)".
+            # Filter to matching keys + non-strict load (same pattern as the
+            # resume-training branch above) so version skew doesn't break eval.
+            _ckpt = state_dict[model_key]
+            _own = self.model.state_dict()
+            _filtered = {k: v for k, v in _ckpt.items() if k in _own}
+            _skipped = [k for k in _ckpt.keys() if k not in _own]
+            if _skipped and self.logger is not None:
+                self.logger.info(
+                    "Skipped {} checkpoint keys missing in current model (e.g. {}).".format(
+                        len(_skipped), ", ".join(_skipped[:5])))
+            self.model.load_state_dict(_filtered, strict=False)
         if (self.cfg.MODEL.EMA) and (self.model_ema is not None):
             self.model_ema.load_state_dict(deepcopy(self.model).state_dict()) 
    

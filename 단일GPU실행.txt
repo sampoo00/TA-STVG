@@ -1,0 +1,1 @@
+python scripts/test_net.py --config-file experiments/hcstvg.yaml MODEL.WEIGHT ckpts/TASTVG_HCSTVG.pth OUTPUT_DIR output/hcstvg DATALOADER.NUM_WORKERS 0

@@ -6,6 +6,10 @@ from copy import deepcopy
 import torch
 import torch.backends.cudnn as cudnn
 import random
+import sys
+# Ensure project root (which contains `config/`, `utils/`, ...) is on sys.path
+# when running as `python scripts/train_net.py` (sys.path[0] would be scripts/).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import cfg
 from utils.comm import synchronize, get_rank, is_main_process, reduce_loss_dict
 from utils.logger import setup_logger

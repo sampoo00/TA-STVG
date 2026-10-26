@@ -1,4 +1,5 @@
 from cgitb import text
+import os
 import torch
 import torch.nn.functional as F
 
@@ -42,8 +43,23 @@ class BERT(nn.Module):
 class Roberta(nn.Module):
     def __init__(self, name, outdim, freeze=False) -> None:
         super().__init__()
-        self.body = RobertaModel.from_pretrained('model_zoo/roberta-base/')
-        self.tokenizer = RobertaTokenizerFast.from_pretrained(pretrained_model_name_or_path='model_zoo/roberta/')
+        # Resolve the local roberta dir robustly:
+        #  - code historically used 'model_zoo/roberta-base/' and 'model_zoo/roberta/',
+        #    but the repo actually ships the files directly under 'model_zoo/'.
+        #  - also support running from scripts/ (cwd != project root).
+        _here = os.path.dirname(os.path.abspath(__file__))
+        _root = os.path.dirname(os.path.dirname(os.path.dirname(_here)))
+        _candidates = [
+            os.path.join(_root, 'model_zoo', 'roberta-base'),
+            os.path.join(_root, 'model_zoo', 'roberta'),
+            os.path.join(_root, 'model_zoo'),
+            'model_zoo/roberta-base',
+            'model_zoo/roberta',
+            'model_zoo',
+        ]
+        roberta_dir = next((d for d in _candidates if os.path.isdir(d)), 'model_zoo')
+        self.body = RobertaModel.from_pretrained(roberta_dir)
+        self.tokenizer = RobertaTokenizerFast.from_pretrained(roberta_dir)
 
         if freeze:
             for p in self.body.parameters():
@@ -57,7 +73,7 @@ class Roberta(nn.Module):
         )
 
     def forward(self, texts, device):
-        tokenized = self.tokenizer.batch_encode_plus(texts, 
+        tokenized = self.tokenizer(texts,
                         padding="longest", return_tensors="pt").to(device)
         encoded_text = self.body(**tokenized)
         text_cls = encoded_text.pooler_output

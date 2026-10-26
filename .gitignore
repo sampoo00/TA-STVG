@@ -1,0 +1,12 @@
+checkpoints
+
+__pycache__
+*.pyc
+*.egg-info
+dist
+.venv
+.env
+model_zoo
+ckpts
+data
+data.tar

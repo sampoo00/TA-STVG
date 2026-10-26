@@ -219,7 +219,7 @@ class VidSTGDataset(data.Dataset):
         gt_anno_cache = os.path.join(cache_dir, f'vidstd-{self.split}-anno.cache')
         
         if os.path.exists(dataset_cache):
-            data = torch.load(dataset_cache)
+            data = torch.load(dataset_cache, weights_only=False)
             return data
 
         gt_data, gt_anno = [], []

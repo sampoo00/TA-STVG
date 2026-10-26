@@ -4,6 +4,10 @@ import os
 import torch
 import torch.backends.cudnn as cudnn
 
+import sys
+# Ensure project root (which contains `config/`, `utils/`, ...) is on sys.path
+# when running as `python scripts/test_net.py` (sys.path[0] would be scripts/).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import cfg
 from utils.comm import synchronize, get_rank, is_main_process
 from utils.logger import setup_logger
@@ -39,8 +43,31 @@ def main():
     )
 
     args = parser.parse_args()
+    # torchrun sets LOCAL_RANK/WORLD_SIZE via env, old launch passes --local-rank arg.
+    # Prefer env when present so both launchers work.
+    if "LOCAL_RANK" in os.environ:
+        try:
+            args.local_rank = int(os.environ["LOCAL_RANK"])
+        except ValueError:
+            pass
     num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    args.distributed = num_gpus > 1
+    # Clamp to physically visible GPUs: nvidia-smi shows only 1 GPU here,
+    # so --nproc_per_node=8 makes ranks 1..7 fail with
+    # "CUDA error: invalid device ordinal" at torch.cuda.set_device().
+    if torch.cuda.is_available():
+        visible = torch.cuda.device_count()
+        if num_gpus > visible:
+            print(
+                f"[warn] WORLD_SIZE={num_gpus} > visible GPUs={visible}. "
+                f"Falling back to single-process (or set --nproc_per_node={visible})."
+            )
+            num_gpus = 1
+            args.distributed = False
+            args.local_rank = 0
+        else:
+            args.distributed = num_gpus > 1
+    else:
+        args.distributed = False
 
     if args.distributed:
         torch.cuda.set_device(args.local_rank)

@@ -170,7 +170,10 @@ class HCSTVGDataset(data.Dataset):
         gt_anno_cache = os.path.join(cache_dir, f'hcstvg-{self.split}-anno.cache')
         
         if os.path.exists(dataset_cache):
-            data = torch.load(dataset_cache)
+            # PyTorch 2.6+ defaults weights_only=True which cannot unpickle
+            # the numpy-containing cache. This cache is generated locally by
+            # this repo (trusted), so allow full unpickle.
+            data = torch.load(dataset_cache, weights_only=False)
             return data
         
         gt_data, gt_anno = [], []
