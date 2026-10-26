@@ -1,2 +1,2 @@
 python scripts/test_net.py --config-file experiments/hcstvg.yaml MODEL.WEIGHT ckpts/TASTVG_HCSTVG.pth OUTPUT_DIR output/hcstvg DATALOADER.NUM_WORKERS 0
-python scripts/one_net.py --video data/hc-stvg/v1_video/55_vfjywN5CN0Y.mp4 --prompt "The man in brown clothes pours the contents of the bag into his hand" --config-file experiments/hcstvg.yaml --weight ckpts/TASTVG_HCSTVG.pth --output-json output/one_result.json DATALOADER.NUM_WORKERS 0
+python scripts/one_net.py --video data/hc-stvg/v1_video/55_vfjywN5CN0Y.mp4 --prompt "The man in brown clothes pours the contents of the bag into his hand" --config-file experiments/hcstvg.yaml --weight ckpts/TASTVG_HCSTVG.pth --output-json output/one_result.json --save-frame --save-video output_video/one_video.mp4 DATALOADER.NUM_WORKERS 0

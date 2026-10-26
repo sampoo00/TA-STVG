@@ -11,3 +11,5 @@ ckpts
 data
 data.tar
 output/hcstvg/log.txt
+*.mp4
+*.jpg
