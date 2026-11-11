@@ -5,6 +5,7 @@ import sys
 import cv2
 import numpy as np
 import torch
+import time
 import torchvision.transforms.functional as TF
 from torchvision.transforms import Resize, ToTensor
 
@@ -299,6 +300,7 @@ def run_grounding(args):
             model.verb_label2[vid_name]['sub'] = args.subject
 
     # 3. Load video frames
+    proc_start_time = time.time()
     raw_frames, fps, orig_w, orig_h = load_video_frames(args.video)
     total_frames = len(raw_frames)
 
@@ -387,6 +389,8 @@ def run_grounding(args):
         "bbox": bbox_array,
         "trajectory": grounded_trajectory,
     }
+    total_process_time = round(time.time() - proc_start_time, 2)
+    result["process_time_sec"] = total_process_time
 
     # Determine output directory: if --output-json is specified, save frames to the same directory
     if args.output_json:
